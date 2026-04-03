@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartShelf | Automated Inventory</title>
+    <link rel="stylesheet" href="style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+
+    <div id="sideMenu" class="side-menu">
+        <div class="menu-header">
+            <i class='bx bx-x close-btn' onclick="toggleMenu()"></i>
+            <div class="user-profile">
+                <div class="avatar">LL</div>
+                <span>Leena L</span>
+            </div>
+        </div>
+        <nav class="menu-links">
+            <a href="#"><i class='bx bx-user-circle'></i> Profile</a>
+            <a href="#"><i class='bx bx-shield-quarter'></i> Terms & Conditions</a>
+            <a href="#"><i class='bx bx-help-circle'></i> Help Center</a>
+            <a href="#" class="logout"><i class='bx bx-log-out'></i> Logout</a>
+        </nav>
+    </div>
+
+    <div class="app-wrapper">
+        <aside class="input-sidebar">
+            <div class="brand">
+                <i class='bx bx-menu' onclick="toggleMenu()"></i>
+                <h2>SmartShelf</h2>
+            </div>
+
+            <div class="form-container">
+                <h3><i class='bx bx-plus-circle'></i> Add Product</h3>
+                <form id="productForm">
+                    <div class="input-group">
+                        <label>Product Name</label>
+                        <input type="text" id="pName" placeholder="e.g. Organic Milk" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Category</label>
+                        <select id="pCategory" required>
+                            <option value="" disabled selected>Select Category</option>
+                            <optgroup label="1. Food & Perishables">
+                                <option>Fresh Produce</option>
+                                <option>Dairy & Refrigerated</option>
+                                <option>Meat & Seafood</option>
+                                <option>Deli & Prepared</option>
+                                <option>Bakery</option>
+                                <option>Frozen Foods</option>
+                            </optgroup>
+                            <optgroup label="2. Pantry & Dry Goods">
+                                <option>Pantry/Staples</option>
+                                <option>Canned Goods/Jars</option>
+                                <option>Pasta, Rice, Cereal</option>
+                                <option>Baking Essentials</option>
+                                <option>Oils & Condiments</option>
+                                <option>Herbs & Spices</option>
+                                <option>Snacks & Sweets</option>
+                            </optgroup>
+                            <optgroup label="3. Non-Food & Household">
+                                <option>Beverages</option>
+                                <option>Household & Cleaning</option>
+                                <option>Personal Care</option>
+                                <option>Baby Items</option>
+                                <option>Pet Care</option>
+                                <option>Miscellaneous</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Location</label>
+                            <input type="text" id="pLocation" placeholder="Shelf A1">
+                        </div>
+                        <div class="input-group">
+                            <label>Quantity</label>
+                            <input type="number" id="pQty" placeholder="0" min="1">
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Mfg. Date</label>
+                            <input type="date" id="pMfgDate">
+                        </div>
+                        <div class="input-group">
+                            <label>Expiry Date</label>
+                            <input type="date" id="pExpiryDate" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Batch/Lot #</label>
+                        <input type="text" id="pBatch" placeholder="LOT-2024-X">
+                    </div>
+
+                    <button type="submit" class="btn-submit">Add to Inventory</button>
+                </form>
+            </div>
+        </aside>
+
+        <main class="dashboard-content">
+            <header class="dashboard-header">
+                <div class="search-box">
+                    <i class='bx bx-search'></i>
+                    <input type="text" id="searchInput" placeholder="Search by product name or batch...">
+                </div>
+            </header>
+
+            <section class="summary-grid">
+                <div class="summary-card total">
+                    <div class="card-info">
+                        <span class="label">Total Products</span>
+                        <h1 id="totalCount">0</h1>
+                    </div>
+                    <i class='bx bx-package'></i>
+                </div>
+                <div class="summary-card warning">
+                    <div class="card-info">
+                        <span class="label">Expiring Soon</span>
+                        <h1 id="warningCount">0</h1>
+                    </div>
+                    <i class='bx bx-time-five'></i>
+                </div>
+                <div class="summary-card expired">
+                    <div class="card-info">
+                        <span class="label">Expired Items</span>
+                        <h1 id="expiredCount">0</h1>
+                    </div>
+                    <i class='bx bx-error-circle'></i>
+                </div>
+            </section>
+
+            <section class="inventory-card">
+                <div class="card-header">
+                    <h3>Inventory Management</h3>
+                    <div class="filter-box">
+                        <i class='bx bx-filter-alt'></i>
+                        <select id="categoryFilter">
+                            <option value="All">All Categories</option>
+                            <option value="Food">Food & Perishables</option>
+                            <option value="Pantry">Pantry & Dry Goods</option>
+                            <option value="Non-Food">Non-Food Items</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="inventoryTable">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Qty</th>
+                                <th>Mfg. Date</th>
+                                <th>Expiry Date</th>
+                                <th>Days Left</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryBody">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
