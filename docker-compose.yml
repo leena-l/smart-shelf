@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # 1. The Database (PostgreSQL)
+  db:
+    image: postgres:16
+    container_name: smartshelf_db
+    restart: always
+    env_file: .env # Loads POSTGRES_USER, PASSWORD, and DB
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # This automatically runs your schema.sql when the DB is first created
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # 2. The Backend (FastAPI)
+  backend:
+    build: ./backend
+    container_name: smartshelf_api
+    depends_on:
+      - db # Ensure the database starts before the backend
+    env_file: .env # Loads DATABASE_URL for your session.py
+    ports:
+      - "8000:8000"
+
+  # 3. The Frontend (Nginx)
+  frontend:
+    build: ./frontend
+    container_name: smartshelf_ui
+    ports:
+      - "80:80" # Maps your computer's port 80 to the container's port 80
+
+volumes:
+  postgres_data:

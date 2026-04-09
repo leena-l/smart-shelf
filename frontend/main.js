@@ -1,22 +1,27 @@
-// State Management
-let inventoryData = [];
+const API_URL = "http://localhost:8000/api/v1/inventory/";
 
-// Initialize
+// 1. Initialize: Load data from the actual Backend when the page opens
 document.addEventListener('DOMContentLoaded', () => {
-    // Adding some sample data
-    inventoryData = [
-        { id: 1, name: "Greek Yogurt", category: "Dairy & Refrigerated", location: "Fridge A", qty: 24, mfg: "2024-02-01", expiry: "2024-03-25", batch: "BATCH-01" },
-        { id: 2, name: "Whole Grain Bread", category: "Bakery", location: "Shelf 4", qty: 10, mfg: "2024-03-10", expiry: "2024-03-18", batch: "BATCH-02" }
-    ];
-    updateUI();
+    fetchInventory();
 });
+
+// Logic: Fetch all items from the Backend
+async function fetchInventory() {
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        renderTable(data); // Send the data to the UI renderer
+    } catch (error) {
+        console.error("Error fetching inventory:", error);
+    }
+}
 
 // UI Logic: Toggle Sliding Menu
 function toggleMenu() {
     document.getElementById('sideMenu').classList.toggle('active');
 }
 
-// Logic: Calculate Days Remaining
+// Logic: Calculate Days Remaining (Same as before)
 function getDaysRemaining(expiry) {
     const today = new Date();
     const exp = new Date(expiry);
@@ -24,35 +29,47 @@ function getDaysRemaining(expiry) {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
-// Logic: Handle Form Submission
-document.getElementById('productForm').addEventListener('submit', (e) => {
+// Logic: Handle Form Submission (Sending to Backend)
+document.getElementById('productForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // Create the object to match our Pydantic Schema exactly
     const newItem = {
-        id: Date.now(),
         name: document.getElementById('pName').value,
         category: document.getElementById('pCategory').value,
         location: document.getElementById('pLocation').value,
-        qty: document.getElementById('pQty').value,
-        mfg: document.getElementById('pMfgDate').value,
-        expiry: document.getElementById('pExpiryDate').value,
-        batch: document.getElementById('pBatch').value
+        quantity: parseInt(document.getElementById('pQty').value),
+        mfg_date: document.getElementById('pMfgDate').value || null,
+        expiry_date: document.getElementById('pExpiryDate').value,
+        batch_number: document.getElementById('pBatch').value
     };
 
-    inventoryData.push(newItem);
-    updateUI();
-    e.target.reset();
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newItem)
+        });
+
+        if (response.ok) {
+            e.target.reset(); // Clear the form
+            fetchInventory(); // Refresh the table with new data from the DB
+        }
+    } catch (error) {
+        console.error("Error adding product:", error);
+    }
 });
 
 // Logic: Render Table and Summary Cards
-function updateUI() {
+function renderTable(inventoryData) {
     const tbody = document.getElementById('inventoryBody');
     tbody.innerHTML = '';
     
     let stats = { total: 0, warning: 0, expired: 0 };
 
     inventoryData.forEach(item => {
-        const daysLeft = getDaysRemaining(item.expiry);
+        // Use expiry_date as defined in our Backend Schema
+        const daysLeft = getDaysRemaining(item.expiry_date);
         let status = { text: "In Stock", class: "status-green" };
 
         if (daysLeft <= 0) {
@@ -67,15 +84,15 @@ function updateUI() {
 
         const row = `
             <tr>
-                <td><strong>${item.name}</strong><br><small style="color:#999">${item.batch}</small></td>
+                <td><strong>${item.name}</strong><br><small style="color:#999">${item.batch_number || 'No Batch'}</small></td>
                 <td>${item.category}</td>
-                <td>${item.qty}</td>
-                <td>${item.mfg || 'N/A'}</td>
-                <td>${item.expiry}</td>
-                <td style="font-weight:700; color: ${daysLeft < 7 ? 'var(--danger)' : 'inherit'}">${daysLeft} days</td>
+                <td>${item.quantity}</td>
+                <td>${item.mfg_date || 'N/A'}</td>
+                <td>${item.expiry_date}</td>
+                <td style="font-weight:700; color: ${daysLeft < 7 ? 'red' : 'inherit'}">${daysLeft} days</td>
                 <td><span class="badge ${status.class}">${status.text}</span></td>
                 <td>
-                    <button class="action-btn" onclick="deleteItem(${item.id})"><i class='bx bx-trash' style="color:var(--danger)"></i></button>
+                    <button class="action-btn" onclick="deleteItem(${item.id})"><i class='bx bx-trash' style="color:red"></i></button>
                 </td>
             </tr>
         `;
@@ -87,7 +104,13 @@ function updateUI() {
     document.getElementById('expiredCount').innerText = stats.expired;
 }
 
-function deleteItem(id) {
-    inventoryData = inventoryData.filter(item => item.id !== id);
-    updateUI();
+async function deleteItem(id) {
+    if (confirm("Are you sure you want to remove this item?")) {
+        try {
+            await fetch(`${API_URL}${id}`, { method: "DELETE" });
+            fetchInventory();
+        } catch (error) {
+            console.error("Error deleting item:", error);
+        }
+    }
 }
